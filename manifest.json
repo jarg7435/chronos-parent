@@ -1,0 +1,10 @@
+{
+  "name": "Control Parental — iPhone & iPad",
+  "short_name": "ControlParen",
+  "description": "Medición de tiempo de uso de aplicaciones en iPhone y iPad para padres",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary"
+}

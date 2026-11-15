@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ControlParen" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Control Parental — Gestión de Tiempo y Corte en Vivo Multi-Dispositivo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- PANTALLA DE BLOQUEO DE LICENCIA PERSONAL E INTRANSFERIBLE (Solo si no está activada) -->
+  <div id="license-gate-overlay" class="modal-backdrop hidden" style="z-index: 500; background: rgba(15, 23, 42, 0.96);">
+    <div class="modal-card" style="max-width: 500px; border: 2px solid #4f46e5;">
+      <div style="text-align: center; margin-bottom: 1rem;">
+        <div style="font-size: 2.8rem;">🔐</div>
+        <h3 style="font-size: 1.3rem; color: #1e1b4b;">Licencia Personal e Intransferible</h3>
+        <p class="subtitle" style="margin-top: 0.3rem;">
+          Esta aplicación es de uso exclusivo para el titular autorizado. Cada clave va firmada digitalmente por el programador y queda vinculada al titular y al cupo de dispositivos e hijos/as contratado.
+        </p>
+      </div>
+
+      <form id="form-activate-license">
+        <div class="form-group">
+          <label for="license-holder-input">👤 Nombre o Identificador del Titular Autorizado *</label>
+          <input type="text" id="license-holder-input" required placeholder="Ej. FAMILIA-GARCIA o nombre del titular" style="font-weight: 700; text-transform: uppercase;" />
+        </div>
+
+        <div class="form-group">
+          <label for="license-key-input">🔑 Clave de Licencia Personal *</label>
+          <textarea id="license-key-input" required rows="3" placeholder="CP2-4D-2H-XXXXX-XXXXX-XXXXX-…" spellcheck="false" autocomplete="off" autocapitalize="characters" class="license-key-textarea"></textarea>
+          <small class="help-text">Copia y pega la clave completa que te entregó el programador (puede ocupar varias líneas).</small>
+        </div>
+
+        <div class="license-device-id-box">
+          <span>📱 Huella única de este dispositivo: <strong id="current-device-fingerprint">...</strong></span>
+        </div>
+
+        <p id="license-error-msg" class="error-text hidden" style="margin-top: 0.5rem; text-align: center;"></p>
+
+        <div class="modal-actions" style="justify-content: space-between; margin-top: 1.2rem;">
+          <button type="button" id="btn-open-dev-from-gate" class="btn btn-ghost btn-sm">👑 Acceso Programador</button>
+          <button type="submit" class="btn btn-primary">✅ Activar Licencia en este Dispositivo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Alerta flotante cuando se acaba o se corta el tiempo -->
+  <div id="alarm-banner" class="alarm-banner hidden">
+    <div class="alarm-content">
+      <span class="alarm-icon">⏰</span>
+      <div>
+        <strong id="alarm-title">¡Tiempo cortado!</strong>
+        <p id="alarm-message">El tiempo asignado para esta aplicación ha finalizado.</p>
+      </div>
+    </div>
+    <div class="alarm-actions">
+      <button id="btn-alarm-bonus" class="btn btn-sm btn-light">+15 min extra</button>
+      <button id="btn-alarm-dismiss" class="btn btn-sm btn-danger">Entendido</button>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <!-- ===== CABECERA PRINCIPAL (marca + menús desplegables) ===== -->
+    <header class="top-header">
+      <div class="header-row">
+        <div class="brand">
+          <div class="brand-logo">🛡️</div>
+          <div class="brand-text">
+            <h1>Control Parental</h1>
+            <span class="license-chip" id="license-status-pill">🔐 Licencia Activa</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- Menú: Añadir apps -->
+          <div class="dropdown">
+            <button type="button" class="btn btn-primary dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+              <span>➕</span><span class="hide-xs">Añadir app</span><span class="caret">▾</span>
+            </button>
+            <div class="dropdown-menu" role="menu">
+              <button type="button" id="btn-add-app" class="dropdown-item" role="menuitem">
+                <span class="di-icon">➕</span>
+                <span><strong>Añadir nueva app</strong><small>Cualquier app o juego, con margen propio</small></span>
+              </button>
+              <button type="button" id="btn-catalog" class="dropdown-item" role="menuitem">
+                <span class="di-icon">🔥</span>
+                <span><strong>Catálogo y tendencias</strong><small>Activa apps populares en un toque</small></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Menú: Familia y ajustes -->
+          <div class="dropdown">
+            <button type="button" class="btn btn-outline dropdown-toggle" aria-haspopup="true" aria-expanded="false" title="Familia, sincronización, licencias y guías">
+              <span>☰</span><span class="hide-xs">Menú</span><span class="caret">▾</span>
+            </button>
+            <div class="dropdown-menu dropdown-menu-right" role="menu">
+              <div class="dropdown-label">Familia</div>
+              <button type="button" id="btn-manage-devices" class="dropdown-item" role="menuitem">
+                <span class="di-icon">📲</span>
+                <span><strong>Dispositivos</strong><small><span id="devices-count-badge">0/0</span> registrados</small></span>
+              </button>
+              <button type="button" id="child-profile-btn" class="dropdown-item" role="menuitem">
+                <span class="di-icon">👦</span>
+                <span><strong>Hijos/as y PIN parental</strong><small><span id="children-count-badge">1/1</span> perfiles</small></span>
+              </button>
+              <button type="button" id="btn-family-sync" class="dropdown-item" role="menuitem">
+                <span class="di-icon">🔗</span>
+                <span><strong>Sincronizar familia</strong><small><span id="sync-code-badge">Solo este dispositivo</span></small></span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-label">Guías</div>
+              <a href="GUIA-IPHONE-IPAD-PASO-A-PASO.html" class="dropdown-item" role="menuitem">
+                <span class="di-icon">🍏</span><span><strong>Guía iPhone / iPad</strong></span>
+              </a>
+              <a href="GUIA-ANDROID-MOVILES-Y-TABLETS.html" class="dropdown-item" role="menuitem">
+                <span class="di-icon">🤖</span><span><strong>Guía Android / Tablets</strong></span>
+              </a>
+              <div class="dropdown-divider"></div>
+              <button type="button" id="btn-dev-license-panel" class="dropdown-item" role="menuitem">
+                <span class="di-icon">👑</span>
+                <span><strong>Licencias</strong><small>Panel del programador</small></span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Modo Padre / Hijo (PIN) -->
+          <button id="btn-lock-mode" type="button" class="btn btn-outline btn-lock" title="Bloquear el panel con PIN para que solo padre/madre/tutor pueda hacer cambios">
+            <span id="lock-icon">🔓</span>
+            <span id="lock-text" class="hide-xs">Bloquear</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de contexto: quién usa qué dispositivo y modo global -->
+      <div class="context-bar">
+        <label class="context-field" title="Dispositivo en el que se está usando o registrando la actividad">
+          <span class="context-label">📲 Dispositivo</span>
+          <span class="select-wrap">
+            <select id="active-device-select" class="context-select"></select>
+          </span>
+        </label>
+        <button type="button" id="btn-quick-add-device" class="btn-icon context-icon-btn" title="Gestionar dispositivos de la familia" aria-label="Gestionar dispositivos">⚙️</button>
+
+        <label class="context-field" title="Hijo o hija al que se le está dando el tiempo ahora">
+          <span class="context-label">👦 Hijo/a</span>
+          <span class="select-wrap">
+            <select id="active-child-select" class="context-select"></select>
+          </span>
+        </label>
+        <button type="button" id="btn-quick-manage-children" class="btn-icon context-icon-btn" title="Gestionar hijos/as y PIN parental" aria-label="Gestionar hijos/as">✏️</button>
+
+        <button id="btn-silent-mode" type="button" class="mode-switch" role="switch" aria-checked="true" title="Alternar entre solo medir el tiempo o cortar automáticamente al llegar al margen">
+          <span class="mode-switch-track"><span class="mode-switch-thumb"></span></span>
+          <span class="mode-switch-text">
+            <span id="silent-icon">📊</span>
+            <span id="silent-text">Solo medir</span>
+          </span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ===== RESUMEN DE HOY (panel plegable) ===== -->
+    <details class="panel summary-panel" id="summary-panel" open>
+      <summary class="panel-summary">
+        <div class="panel-summary-main">
+          <span class="badge-tag">Resumen de hoy</span>
+          <div class="panel-summary-metrics">
+            <strong id="global-used-time" class="metric-value">0 min</strong>
+            <span class="metric-of">de <span id="global-limit-time">3h 00m</span></span>
+            <span id="global-remaining-time" class="remaining-chip">Quedan 3h 00m</span>
+          </div>
+          <div class="progress-track lg">
+            <div id="global-progress-bar" class="progress-fill" style="width: 0%"></div>
+          </div>
+        </div>
+        <span class="panel-chevron" aria-hidden="true">▾</span>
+      </summary>
+
+      <div class="panel-body summary-grid">
+        <div class="summary-card">
+          <div class="summary-header">
+            <h2>Por hijo/a y dispositivo</h2>
+            <button id="btn-edit-global-limit" class="btn-icon" title="Configurar margen diario global" aria-label="Configurar margen diario">⚙️</button>
+          </div>
+          <div class="device-breakdown-pills" id="global-devices-breakdown"></div>
+          <div class="summary-footer">
+            <span id="active-timers-indicator" class="status-pill">Ninguna app en uso ahora</span>
+            <button id="btn-reset-day" class="btn-link">🔄 Reiniciar contadores de hoy</button>
+          </div>
+        </div>
+
+        <div class="summary-card">
+          <div class="summary-header">
+            <h2>Por categoría</h2>
+            <button id="btn-edit-categories" class="btn-icon" title="Editar márgenes por categoría" aria-label="Editar márgenes por categoría">⚙️</button>
+          </div>
+          <div id="category-bars-container" class="category-bars"></div>
+        </div>
+      </div>
+    </details>
+
+    <!-- Barra de Filtros y Búsqueda -->
+    <section class="toolbar">
+      <div class="search-box">
+        <span aria-hidden="true">🔍</span>
+        <input type="search" id="search-input" placeholder="Buscar app o juego..." aria-label="Buscar app o juego" />
+      </div>
+
+      <div class="category-tabs" id="category-tabs" role="tablist">
+        <button class="tab-btn active" data-category="all">Todas</button>
+        <button class="tab-btn" data-category="controlled">🛡️ Supervisadas <span class="tab-count" id="count-controlled">0</span></button>
+        <button class="tab-btn" data-category="uncontrolled">🟢 Libres <span class="tab-count" id="count-uncontrolled">0</span></button>
+        <button class="tab-btn" data-category="Juegos">🎮 Juegos</button>
+        <button class="tab-btn" data-category="Redes Sociales">💬 Redes</button>
+        <button class="tab-btn" data-category="Videos">📺 Vídeos</button>
+        <button class="tab-btn" data-category="Educación">📚 Educación</button>
+      </div>
+    </section>
+
+    <!-- Cuadrícula de Aplicaciones y Juegos -->
+    <main id="apps-grid" class="apps-grid">
+      <!-- Tarjetas generadas dinámicamente -->
+    </main>
+  </div>
+
+  <!-- MODAL: Gestionar Todos los Dispositivos de la Familia (Ej. 3 iPhones y 6 iPads) -->
+  <div id="modal-devices" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>📲 Dispositivos de la Familia (iPhones, iPads, Tablets y PCs)</h3>
+          <p class="subtitle">Añade todos los dispositivos susceptibles de ser utilizados en casa (por ejemplo, 3 iPhones y 6 iPads) para medir y cortar el tiempo en cualquiera de ellos.</p>
+        </div>
+        <button class="modal-close" data-close="modal-devices">✕</button>
+      </div>
+
+      <form id="form-add-device" class="form-row" style="align-items: flex-end; margin-bottom: 1rem;">
+        <div class="form-group flex-1" style="margin-bottom:0;">
+          <label for="new-device-name">Nombre del nuevo dispositivo</label>
+          <input type="text" id="new-device-name" required placeholder="Ej. Móvil Samsung, Tablet Xiaomi, iPad 4, iPhone..." />
+        </div>
+        <div class="form-group" style="width: 210px; margin-bottom:0;">
+          <label for="new-device-type">Tipo de Dispositivo</label>
+          <select id="new-device-type">
+            <option value="iPad">📲 iPad (Apple)</option>
+            <option value="iPhone">📱 iPhone (Apple)</option>
+            <option value="Móvil Android">🤖 Móvil Android (Samsung, Xiaomi...)</option>
+            <option value="Tablet Android">📲 Tablet Android (Lenovo, Samsung...)</option>
+            <option value="PC">💻 Ordenador / Chromebook</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">➕ Añadir Dispositivo</button>
+      </form>
+
+      <div style="margin-bottom: 0.75rem;">
+        <button type="button" id="btn-preset-3iphone-6ipad" class="btn btn-sm btn-secondary">
+          ⚡ Cargar plantilla rápida: 3 iPhones + 6 iPads (9 dispositivos)
+        </button>
+      </div>
+
+      <div id="devices-manager-list" class="catalog-list" style="max-height: 45vh;">
+        <!-- Renderizado por JS -->
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-close="modal-devices">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Catálogo de Apps y Nuevas Aplicaciones en Tendencia -->
+  <div id="modal-catalog" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>🔥 Catálogo de Aplicaciones y Nuevas Tendencias</h3>
+          <p class="subtitle">Activa las aplicaciones que usen tus hijos o añade en el acto cualquier <strong>nueva aplicación o juego que se ponga de moda</strong>.</p>
+        </div>
+        <button class="modal-close" data-close="modal-catalog">✕</button>
+      </div>
+
+      <!-- Formulario directo para añadir cualquier nueva app en tendencia sin salir del catálogo -->
+      <form id="form-quick-trend-app" style="background:#eef2ff; border:1px solid #c7d2fe; padding:0.85rem 1rem; border-radius:12px; margin-bottom:1rem;">
+        <label style="color:#1e1b4b; display:block; margin-bottom:0.4rem;">🚀 ¿Ha salido una nueva App o Juego en tendencia? Añádelo aquí al instante:</label>
+        <div class="form-row" style="flex-wrap:wrap; align-items:center;">
+          <input type="text" id="trend-app-name" class="flex-1" required placeholder="Nombre de la nueva app o juego en tendencia..." style="background:#fff; min-width:180px;" />
+          <input type="text" id="trend-app-icon" value="🔥" maxlength="4" style="width:60px; text-align:center; background:#fff;" title="Icono o Emoji" />
+          <select id="trend-app-cat" style="background:#fff;">
+            <option value="Juegos">🎮 Juegos</option>
+            <option value="Redes Sociales">💬 Redes Sociales</option>
+            <option value="Videos">📺 Videos / Streaming</option>
+            <option value="Educación">📚 Educación / Otros</option>
+          </select>
+          <input type="number" id="trend-app-limit" value="60" min="5" max="720" style="width:85px; background:#fff;" title="Margen en minutos" />
+          <button type="submit" class="btn btn-primary">➕ Añadir Tendencia</button>
+        </div>
+      </form>
+
+      <div id="catalog-list" class="catalog-list">
+        <!-- Generado dinámicamente por JS -->
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="btn-catalog-custom">⚙️ Añadir con opciones avanzadas</button>
+        <button type="button" class="btn btn-primary" data-close="modal-catalog">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Agregar / Editar Aplicación (incluyendo Nuevas Apps en Tendencia) -->
+  <div id="modal-app" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-app-title">Añadir Aplicación o Nueva Tendencia</h3>
+        <button class="modal-close" data-close="modal-app">✕</button>
+      </div>
+
+      <form id="form-app">
+        <input type="hidden" id="app-id-input" />
+
+        <!-- Plantillas rápidas de apps populares y en tendencia -->
+        <div id="quick-presets-section" class="form-group">
+          <label>🔥 Apps populares y en tendencia (o escribe debajo cualquier app nueva)</label>
+          <div class="preset-chips" id="preset-chips">
+            <button type="button" class="chip" data-name="TikTok" data-cat="Redes Sociales" data-icon="🎵" data-color="#0f172a">🎵 TikTok</button>
+            <button type="button" class="chip" data-name="Roblox" data-cat="Juegos" data-icon="🎲" data-color="#e11d48">🎲 Roblox</button>
+            <button type="button" class="chip" data-name="YouTube" data-cat="Videos" data-icon="▶️" data-color="#dc2626">▶️ YouTube</button>
+            <button type="button" class="chip" data-name="Brawl Stars" data-cat="Juegos" data-icon="⭐" data-color="#eab308">⭐ Brawl Stars</button>
+            <button type="button" class="chip" data-name="WhatsApp" data-cat="Redes Sociales" data-icon="💬" data-color="#22c55e">💬 WhatsApp</button>
+            <button type="button" class="chip" data-name="Instagram" data-cat="Redes Sociales" data-icon="📸" data-color="#db2777">📸 Instagram</button>
+            <button type="button" class="chip" data-name="Minecraft" data-cat="Juegos" data-icon="⛏️" data-color="#16a34a">⛏️ Minecraft</button>
+            <button type="button" class="chip" data-name="Fortnite" data-cat="Juegos" data-icon="🏆" data-color="#7c3aed">🏆 Fortnite</button>
+            <button type="button" class="chip" data-name="Clash Royale" data-cat="Juegos" data-icon="👑" data-color="#2563eb">👑 Clash Royale</button>
+            <button type="button" class="chip" data-name="Stumble Guys" data-cat="Juegos" data-icon="🏃" data-color="#f97316">🏃 Stumble Guys</button>
+            <button type="button" class="chip" data-name="Pokémon TCG Pocket" data-cat="Juegos" data-icon="🃏" data-color="#eab308">🃏 Pokémon Pocket</button>
+            <button type="button" class="chip" data-name="Snapchat" data-cat="Redes Sociales" data-icon="👻" data-color="#ca8a04">👻 Snapchat</button>
+            <button type="button" class="chip" data-name="BeReal" data-cat="Redes Sociales" data-icon="📷" data-color="#1e293b">📷 BeReal</button>
+            <button type="button" class="chip" data-name="CapCut" data-cat="Videos" data-icon="✂️" data-color="#0f172a">✂️ CapCut</button>
+            <button type="button" class="chip" data-name="Twitch" data-cat="Videos" data-icon="🟣" data-color="#9333ea">🟣 Twitch</button>
+            <button type="button" class="chip" data-name="Kick" data-cat="Videos" data-icon="🟢" data-color="#16a34a">🟢 Kick</button>
+            <button type="button" class="chip" data-name="Discord" data-cat="Redes Sociales" data-icon="🎧" data-color="#4f46e5">🎧 Discord</button>
+            <button type="button" class="chip" data-name="Netflix" data-cat="Videos" data-icon="🎬" data-color="#b91c1c">🎬 Netflix</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="app-name-input">Nombre de la App o Juego (cualquier app existente o nueva) *</label>
+            <input type="text" id="app-name-input" required placeholder="Escribe el nombre de cualquier aplicación..." />
+          </div>
+          <div class="form-group" style="width: 110px;">
+            <label for="app-icon-input">Icono / Emoji</label>
+            <input type="text" id="app-icon-input" value="🔥" maxlength="4" style="text-align:center; font-size: 1.25rem;" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="app-category-input">Categoría</label>
+            <select id="app-category-input">
+              <option value="Juegos">🎮 Juegos</option>
+              <option value="Redes Sociales">💬 Redes Sociales</option>
+              <option value="Videos">📺 Videos y Streaming</option>
+              <option value="Educación">📚 Educación / Otros</option>
+            </select>
+          </div>
+          <div class="form-group" style="width: 110px;">
+            <label for="app-color-input">Color</label>
+            <input type="color" id="app-color-input" value="#4f46e5" />
+          </div>
+        </div>
+
+        <!-- Selector de si se controla o no -->
+        <div class="form-group">
+          <label>Modo de Supervisión para esta App</label>
+          <div class="control-mode-selector">
+            <label class="mode-option">
+              <input type="radio" name="app-controlled-mode" id="mode-controlled-yes" value="true" checked />
+              <div>
+                <strong>🛡️ Supervisar con margen de tiempo</strong>
+                <span>Permite medir, fijar margen (ej. 1h) y cortar cuando quieras (ej. a los 40m)</span>
+              </div>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="app-controlled-mode" id="mode-controlled-no" value="false" />
+              <div>
+                <strong>🟢 Uso libre (solo medir tiempo)</strong>
+                <span>Mide el tiempo informativo sin aplicar cortes</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" id="limit-field-wrapper">
+          <label for="app-limit-input">Margen de Tiempo Diario Inicial (en minutos) *</label>
+          <div class="limit-input-group">
+            <input type="number" id="app-limit-input" min="1" max="720" step="1" value="60" required />
+            <div class="quick-time-btns">
+              <button type="button" class="btn-pill" data-mins="15">15m</button>
+              <button type="button" class="btn-pill" data-mins="30">30m</button>
+              <button type="button" class="btn-pill" data-mins="40">40m</button>
+              <button type="button" class="btn-pill" data-mins="45">45m</button>
+              <button type="button" class="btn-pill" data-mins="60">1h (60m)</button>
+              <button type="button" class="btn-pill" data-mins="90">1h 30m</button>
+              <button type="button" class="btn-pill" data-mins="120">2h</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="app-notes-input">Notas o reglas familiares para esta app (opcional)</label>
+          <input type="text" id="app-notes-input" placeholder="Ej. Nueva app en tendencia / Solo tras terminar tareas" />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close="modal-app">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Aplicación</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Configurar Límites de Categorías y Global -->
+  <div id="modal-limits" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Configurar Márgenes Diarios Globales y por Categoría</h3>
+        <button class="modal-close" data-close="modal-limits">✕</button>
+      </div>
+
+      <form id="form-limits">
+        <div class="form-group">
+          <label for="global-limit-input">🌐 Margen Total Diario de Referencia (minutos)</label>
+          <input type="number" id="global-limit-input" min="15" max="1440" step="15" required />
+        </div>
+
+        <hr class="divider" />
+        <p class="section-desc">Márgenes diarios por categoría (en minutos):</p>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="cat-limit-juegos">🎮 Juegos (min)</label>
+            <input type="number" id="cat-limit-juegos" min="0" max="1440" step="15" required />
+          </div>
+          <div class="form-group flex-1">
+            <label for="cat-limit-redes">💬 Redes Sociales (min)</label>
+            <input type="number" id="cat-limit-redes" min="0" max="1440" step="15" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="cat-limit-videos">📺 Videos y Streaming (min)</label>
+            <input type="number" id="cat-limit-videos" min="0" max="1440" step="15" required />
+          </div>
+          <div class="form-group flex-1">
+            <label for="cat-limit-educacion">📚 Educación / Otros (min)</label>
+            <input type="number" id="cat-limit-educacion" min="0" max="1440" step="15" required />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close="modal-limits">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Márgenes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Perfiles de Hijos/as Autorizados (1 o varios hijos según licencia) y PIN Parental -->
+  <div id="modal-profile" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>👦👧 Hijos/as Autorizados en la Licencia y PIN Parental</h3>
+          <p class="subtitle">Si tienes uno o varios hijos en casa, selecciona o añade a cada hijo/a (según el cupo contratado en tu licencia) para saber exactamente <strong>a quién le estás dejando el tiempo de juego o acceso</strong>.</p>
+        </div>
+        <button class="modal-close" data-close="modal-profile">✕</button>
+      </div>
+
+      <!-- Cupo de hijos de la licencia -->
+      <div id="children-quota-banner" style="background:#eef2ff; border:1px solid #c7d2fe; border-radius:10px; padding:0.65rem 0.9rem; margin-bottom:0.9rem; font-size:0.86rem; color:#1e1b4b;">
+        <!-- Renderizado por JS -->
+      </div>
+
+      <!-- Lista de hijos/as registrados en la familia -->
+      <div id="children-manager-list" class="catalog-list" style="max-height: 220px; margin-bottom: 1rem;">
+        <!-- Renderizado por JS -->
+      </div>
+
+      <form id="form-profile" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:0.9rem;">
+        <input type="hidden" id="profile-child-id-input" />
+        <label id="form-profile-mode-title" style="color:#1e293b; font-weight:700; display:block; margin-bottom:0.5rem;">✏️ Editar Hijo/a Seleccionado o Añadir Nuevo Hijo/a:</label>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="profile-name-input">Nombre del hijo o hija *</label>
+            <input type="text" id="profile-name-input" required placeholder="Ej. Mateo, Sofía, Lucas..." />
+          </div>
+          <div class="form-group" style="width: 140px;">
+            <label for="profile-age-input">Edad (opcional)</label>
+            <input type="text" id="profile-age-input" placeholder="Cualquier edad" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Icono / Avatar del hijo o hija</label>
+          <div class="avatar-picker" id="avatar-picker">
+            <button type="button" class="avatar-opt selected" data-avatar="👦">👦</button>
+            <button type="button" class="avatar-opt" data-avatar="👧">👧</button>
+            <button type="button" class="avatar-opt" data-avatar="🧒">🧒</button>
+            <button type="button" class="avatar-opt" data-avatar="👶">👶</button>
+            <button type="button" class="avatar-opt" data-avatar="🧑">🧑</button>
+            <button type="button" class="avatar-opt" data-avatar="🚀">🚀</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="profile-pin-input">PIN Parental de Padre/Madre/Tutor (4 dígitos)</label>
+          <input type="password" id="profile-pin-input" maxlength="4" pattern="\d{4}" placeholder="1234" required />
+          <small class="help-text">Protege la aplicación para que ninguno de los hijos pueda quitar un corte ni cambiar márgenes.</small>
+        </div>
+
+        <div class="modal-actions" style="justify-content: space-between; flex-wrap: wrap;">
+          <button type="button" id="btn-new-child-profile" class="btn btn-secondary">➕ Añadir Otro Hijo/a</button>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-ghost" data-close="modal-profile">Cerrar</button>
+            <button type="submit" class="btn btn-primary">💾 Guardar Hijo/a y PIN</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Ingresar PIN Parental -->
+  <div id="modal-pin" class="modal-backdrop hidden">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h3>🔒 Desbloquear Modo Padre/Madre</h3>
+        <button class="modal-close" data-close="modal-pin">✕</button>
+      </div>
+      <form id="form-pin">
+        <p class="section-desc">Ingresa tu PIN parental de 4 dígitos para modificar tiempos, cortar o desbloquear.</p>
+        <div class="form-group">
+          <input type="password" id="unlock-pin-input" maxlength="4" placeholder="••••" class="pin-display-input" required />
+          <p id="pin-error-msg" class="error-text hidden">PIN incorrecto. Intenta de nuevo.</p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" data-close="modal-pin">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Desbloquear</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Sincronización Familiar Multi-Dispositivo (Todos los iPhones e iPads de la casa) -->
+  <div id="modal-family-sync" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>👨‍👩‍👧‍👦 Conectar Todos los iPhones, iPads y Dispositivos de la Familia</h3>
+          <p class="subtitle">Sincroniza en tiempo real todos los dispositivos de tu familia. Todo lo que se envía va <strong>cifrado de extremo a extremo</strong> (AES-256-GCM) con vuestro código familiar.</p>
+        </div>
+        <button class="modal-close" data-close="modal-family-sync">✕</button>
+      </div>
+
+      <div class="sync-box-panel">
+        <div class="form-group">
+          <label for="family-sync-code-input">🔑 Código secreto de tu familia (el mismo en todos los dispositivos de casa)</label>
+          <div class="form-row" style="align-items:center; flex-wrap:wrap;">
+            <input type="text" id="family-sync-code-input" class="flex-1" placeholder="Pulsa 🎲 para crear uno seguro" autocomplete="off" spellcheck="false" style="font-weight:700; text-transform:uppercase; font-family:monospace; min-width:200px;" />
+            <button type="button" id="btn-generate-sync-code" class="btn btn-secondary" title="Crear un código aleatorio imposible de adivinar">🎲 Generar código seguro</button>
+            <button type="button" id="btn-copy-sync-code" class="btn btn-ghost" title="Copiar el código para escribirlo en los demás dispositivos">📋 Copiar</button>
+          </div>
+          <div id="sync-code-strength" class="sync-strength"></div>
+          <div class="form-row" style="align-items:center; flex-wrap:wrap; margin-top:0.35rem;">
+            <button type="button" id="btn-save-sync-code" class="btn btn-primary">🔗 Conectar este dispositivo</button>
+            <button type="button" id="btn-sync-now" class="btn btn-secondary">🔄 Sincronizar ahora</button>
+            <button type="button" id="btn-disconnect-sync" class="btn btn-ghost">⏏️ Desconectar</button>
+          </div>
+          <small class="help-text" id="sync-status-msg">Los dispositivos con el mismo código comparten los tiempos y reciben los cortes al instante. Nadie sin el código puede leer ni enviar datos (tampoco el programador).</small>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="form-group">
+          <label>⚡ Enlaces de Automatización para cada iPhone o iPad</label>
+          <p class="help-text">Selecciona la aplicación y el dispositivo concreto (por ejemplo, <em>iPad 1</em>, <em>iPad 2</em>, <em>iPhone Hijo</em>...) para obtener su enlace directo de inicio y parada automática:</p>
+          <div class="form-row" style="margin-top:0.4rem;">
+            <select id="shortcut-app-select" class="flex-1"></select>
+            <select id="shortcut-device-select" style="width:190px;"></select>
+          </div>
+          <div class="shortcut-urls-box">
+            <div class="shortcut-url-item">
+              <span>▶️ <strong>Al abrir la app en ese dispositivo:</strong></span>
+              <input type="text" id="shortcut-url-start" readonly onclick="this.select()" />
+            </div>
+            <div class="shortcut-url-item">
+              <span>⏹️ <strong>Al cerrar la app en ese dispositivo:</strong></span>
+              <input type="text" id="shortcut-url-stop" readonly onclick="this.select()" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-close="modal-family-sync">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PANEL DEL PROGRAMADOR — Estado de la licencia (las claves se generan fuera de la app) -->
+  <div id="modal-dev-licenses" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>👑 Panel del Programador — Licencias</h3>
+          <p class="subtitle">Consulta el estado de la licencia de este dispositivo. Las claves firmadas se crean con tu herramienta privada.</p>
+        </div>
+        <button class="modal-close" data-close="modal-dev-licenses">✕</button>
+      </div>
+
+      <!-- Paso 1: Desbloqueo de Programador -->
+      <div id="dev-auth-section" class="form-group" style="background:#f8fafc; padding:1rem; border-radius:12px; border:1px solid #cbd5e1;">
+        <label for="dev-master-password-input">🔒 Contraseña Maestra del Programador</label>
+        <div class="form-row">
+          <input type="password" id="dev-master-password-input" class="flex-1" placeholder="Ingresa tu clave de programador..." />
+          <button type="button" id="btn-unlock-dev-panel" class="btn btn-primary">Acceder</button>
+        </div>
+        <p id="dev-auth-error" class="error-text hidden">Contraseña de programador incorrecta.</p>
+      </div>
+
+      <!-- Paso 2: Estado de la licencia (las claves se generan FUERA de la app) -->
+      <div id="dev-generator-section" class="hidden">
+        <div class="ios-native-callout" style="margin-bottom: 0.85rem;">
+          <strong>🛡️ Licencias con firma digital ECDSA P-256</strong>
+          <p>Por seguridad, <strong>esta app ya no puede generar claves</strong>: solo contiene la clave pública, que sirve para comprobarlas pero no para crearlas. Las claves para tus clientes se generan en tu ordenador con la herramienta privada <code>PROGRAMADOR-PRIVADO/GENERADOR-LICENCIAS.html</code>, que nunca se entrega a los clientes.</p>
+        </div>
+
+        <div class="form-group">
+          <label>Estado de Licencia en este Dispositivo Actual</label>
+          <div id="current-license-summary-box" style="font-size:0.84rem; background:#f8fafc; padding:0.75rem; border-radius:8px; border:1px solid #cbd5e1;"></div>
+          <div style="margin-top:0.5rem;">
+            <button type="button" id="btn-lock-license-test" class="btn btn-sm btn-outline">🔒 Cerrar licencia actual (Probar pantalla de bloqueo de cliente nuevo)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" data-close="modal-dev-licenses">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pantalla de Bloqueo cuando el Padre/Madre corta el tiempo en directo o se alcanza el minuto de corte -->
+  <div id="live-cut-overlay" class="modal-backdrop hidden" style="z-index: 350; background: rgba(127, 29, 29, 0.92);">
+    <div class="modal-card modal-sm" style="text-align: center; border: 3px solid #ef4444;">
+      <div style="font-size: 3.2rem; margin-bottom: 0.4rem;">🛑</div>
+      <h3 id="live-cut-title" style="font-size: 1.35rem; color: #991b1b;">¡Tiempo Cortado!</h3>
+      <p id="live-cut-msg" class="section-desc" style="margin-top: 0.5rem; color: #1e293b; font-weight: 500;">
+        Tus padres han finalizado el tiempo de uso para esta aplicación.
+      </p>
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 0.75rem; margin: 0.9rem 0; font-size: 0.85rem; color: #7f1d1d;">
+        <div>Tiempo utilizado hoy: <strong id="live-cut-used">40 min</strong></div>
+        <div id="live-cut-reason" style="margin-top: 0.25rem; font-weight: 700;">Corte aplicado</div>
+      </div>
+      <div class="form-group" style="margin-top: 0.75rem;">
+        <label for="live-cut-pin-input">PIN Parental para desbloquear o dar más margen</label>
+        <input type="password" id="live-cut-pin-input" maxlength="4" placeholder="••••" class="pin-display-input" />
+        <p id="live-cut-pin-error" class="error-text hidden">PIN incorrecto.</p>
+      </div>
+      <div class="modal-actions" style="justify-content: center; flex-wrap: wrap;">
+        <button type="button" id="btn-live-cut-unlock" class="btn btn-primary">🔓 Desbloquear (+15 min)</button>
+        <button type="button" id="btn-live-cut-close-parent" class="btn btn-outline">Cerrar aviso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Programar Corte a los X Minutos (ej. de 60 min bajarlo a 40 min) o Cortar en el Acto -->
+  <div id="modal-cut-margin" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="cut-margin-title">⏱️ Ajustar Margen o Cortar Tiempo en Vivo</h3>
+          <p class="subtitle">Puedes darle un margen inicial (ej. 1 hora) y recortárselo en cualquier momento (ej. a los 40 min) o cortarlo al instante.</p>
+        </div>
+        <button class="modal-close" data-close="modal-cut-margin">✕</button>
+      </div>
+
+      <form id="form-cut-margin">
+        <input type="hidden" id="cut-margin-app-id" />
+
+        <div class="cut-status-summary" id="cut-status-summary">
+          <!-- Renderizado por JS -->
+        </div>
+
+        <div class="form-group" style="margin-top: 0.9rem;">
+          <label for="cut-at-minute-input">✂️ ¿A qué minuto exacto quieres que se le corte hoy? (en minutos)</label>
+          <input type="number" id="cut-at-minute-input" min="1" max="720" step="1" required />
+          <small class="help-text">Ejemplo: Si le diste 60 min (1 hora) pero quieres cortárselo a los <strong>40 minutos</strong>, escribe <strong>40</strong> (o toca el botón rápido de abajo). Al llegar a 40 min se cortará automáticamente.</small>
+
+          <div class="quick-time-btns" style="margin-top: 0.55rem;">
+            <button type="button" class="btn-pill cut-preset-btn" data-cutmins="20">Cortar a los 20m</button>
+            <button type="button" class="btn-pill cut-preset-btn" data-cutmins="30">Cortar a los 30m</button>
+            <button type="button" class="btn-pill cut-preset-btn" data-cutmins="40" style="border-color:#dc2626; color:#dc2626; font-weight:800;">✂️ Cortar a los 40m</button>
+            <button type="button" class="btn-pill cut-preset-btn" data-cutmins="45">Cortar a los 45m</button>
+            <button type="button" class="btn-pill cut-preset-btn" data-cutmins="60">Margen de 1h (60m)</button>
+            <button type="button" class="btn-pill" id="btn-cut-in-5m" style="background:#fef3c7; border-color:#f59e0b; color:#92400e;">⏳ Cortar dentro de 5 min</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
+            <input type="checkbox" id="cut-enforce-checkbox" checked style="width:18px; height:18px;" />
+            <span><strong>🛑 Activar corte automático al llegar a ese minuto</strong> (aunque el resto de apps estén en modo solo medir)</span>
+          </label>
+        </div>
+
+        <div class="modal-actions" style="justify-content: space-between; flex-wrap: wrap;">
+          <button type="button" id="btn-cut-immediately" class="btn btn-danger">🛑 ¡Cortar Ahora Mismo!</button>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="button" class="btn btn-ghost" data-close="modal-cut-margin">Cancelar</button>
+            <button type="submit" class="btn btn-primary">💾 Guardar Corte</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
