@@ -1787,12 +1787,12 @@ select {
 /* Cabecera en móviles muy estrechos (iPhone SE, 320 px) */
 .header-row .brand {
   flex: 1;
-  min-width: 0;
+  min-width: auto; /* nunca más estrecho que la palabra más larga del título */
 }
 
 .brand-text h1 {
   line-height: 1.15;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word; /* corta solo entre palabras */
 }
 
 @media (max-width: 360px) {
@@ -1939,47 +1939,27 @@ input[type="url"] {
   flex-shrink: 0;
 }
 
-/* ----- Tarjeta de activación con cabecera oscura de marca ----- */
+/* ----- Tarjeta de activación con cabecera azul marino de marca ----- */
 .gate-card {
   --gate-pad-x: 1.5rem;
   --gate-pad-top: 1.5rem;
   max-width: 500px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.6);
 }
 
 .gate-hero {
   position: relative;
-  overflow: hidden;
-  isolation: isolate;
   margin: calc(-1 * var(--gate-pad-top)) calc(-1 * var(--gate-pad-x)) 1.15rem;
-  padding: 1.6rem 1rem 1.35rem;
+  padding: 0.6rem 1rem 0.4rem;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  text-align: center;
-  /* Fondo azul noche con halos suaves azul y naranja (colores del logo) */
-  background:
-    radial-gradient(120% 85% at 50% 18%, rgba(59, 130, 246, 0.28) 0%, rgba(59, 130, 246, 0) 60%),
-    radial-gradient(70% 60% at 85% 100%, rgba(249, 115, 22, 0.16) 0%, rgba(249, 115, 22, 0) 70%),
-    linear-gradient(180deg, #111827 0%, #0b1220 100%);
+  justify-content: center;
+  /* Mismo azul marino que el fondo del logo: los bordes difuminados de la imagen se funden sin costuras */
+  background: var(--brand-navy);
 }
 
-/* Brillo diagonal muy sutil que se difumina hacia los bordes */
-.gate-hero::before {
-  content: "";
-  position: absolute;
-  inset: -40% -20%;
-  z-index: -1;
-  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.07) 50%, transparent 62%);
-  -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000 30%, transparent 75%);
-  mask-image: radial-gradient(70% 60% at 50% 45%, #000 30%, transparent 75%);
-  pointer-events: none;
-}
-
-/* Línea de luz inferior que separa con suavidad la cabecera del contenido blanco */
+/* Línea de luz que separa con suavidad la cabecera azul marino del contenido blanco */
 .gate-hero::after {
   content: "";
   position: absolute;
@@ -1987,47 +1967,13 @@ input[type="url"] {
   right: 12%;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.55), rgba(251, 146, 60, 0.55), transparent);
+  background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.5), rgba(251, 146, 60, 0.5), transparent);
 }
 
-.gate-hero-watch {
-  width: 112px;
-  height: 112px;
-  object-fit: contain;
-  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(96, 165, 250, 0.18));
-}
-
-.gate-wordmark {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1;
-  user-select: none;
-}
-
-.wm-chronos {
-  font-size: 2rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  margin-right: -0.12em; /* compensa el espaciado final para centrar */
-  background: linear-gradient(180deg, #f1f5f9 0%, #bfdbfe 55%, #7fa6d6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 10px rgba(59, 130, 246, 0.3));
-}
-
-.wm-parent {
-  margin-top: 0.3rem;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.32em;
-  margin-right: -0.32em;
-  background: linear-gradient(180deg, #fed7aa 0%, #fb923c 55%, #ea580c 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.gate-hero-logo {
+  display: block;
+  width: min(250px, 70%);
+  height: auto;
 }
 
 @media (max-width: 640px) {
@@ -2037,17 +1983,13 @@ input[type="url"] {
   }
   .gate-hero {
     border-radius: 18px 18px 0 0;
-    padding: 1.3rem 1rem 1.1rem;
   }
-  .gate-hero-watch {
-    width: 92px;
-    height: 92px;
+  .gate-hero-logo {
+    width: min(210px, 66%);
   }
-  .wm-chronos { font-size: 1.7rem; }
-  .wm-parent { font-size: 1rem; }
 }
 
-/* Pantalla de bienvenida: fondo blanco como el logo; si el JavaScript fallase, se oculta sola */
+/* Pantalla de bienvenida: azul marino como el logo; si el JavaScript fallase, se oculta sola */
 .app-splash {
   position: fixed;
   inset: 0;
@@ -2055,13 +1997,13 @@ input[type="url"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: var(--brand-navy);
   transition: opacity 0.35s ease, visibility 0.35s ease;
   animation: splashAutoHide 0.35s ease 3s forwards;
 }
 
 .app-splash img {
-  width: min(62vw, 40vh, 320px);
+  width: min(70vw, 46vh, 360px);
   height: auto;
   animation: splashPop 0.5s ease-out both;
 }
@@ -2083,4 +2025,123 @@ input[type="url"] {
 
 @media (max-width: 360px) {
   .brand-logo-img { width: 36px; height: 36px; }
+}
+
+
+/* =====================================================================
+   TEMA DE MARCA AZUL MARINO (#111420, el fondo del logo definitivo)
+   Cabecera de la app, tarjeta de activación y pantalla de bienvenida
+   comparten exactamente el mismo color para una estética unificada.
+   ===================================================================== */
+:root {
+  --brand-navy: #111420;
+  --brand-navy-soft: rgba(255, 255, 255, 0.06);
+  --brand-navy-line: rgba(255, 255, 255, 0.13);
+  --brand-navy-text: #e2e8f0;
+  --brand-navy-muted: #94a3b8;
+}
+
+.top-header {
+  background: var(--brand-navy);
+  border-color: var(--brand-navy-line);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.25);
+  color: var(--brand-navy-text);
+}
+
+.top-header .brand h1 {
+  color: #f8fafc;
+}
+
+.top-header .license-chip {
+  color: var(--brand-navy-muted);
+}
+
+.brand-logo-img {
+  border-radius: 11px;
+}
+
+.top-header .btn-outline {
+  background: var(--brand-navy-soft);
+  border-color: var(--brand-navy-line);
+  color: var(--brand-navy-text);
+}
+
+.top-header .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.top-header .btn-lock.locked {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(251, 191, 36, 0.6);
+  color: #fde68a;
+}
+
+.top-header .context-bar {
+  border-top-color: var(--brand-navy-line);
+}
+
+.top-header .context-field {
+  background: var(--brand-navy-soft);
+  border-color: var(--brand-navy-line);
+}
+
+.top-header .context-field:hover,
+.top-header .context-field:focus-within {
+  border-color: rgba(165, 180, 252, 0.7);
+}
+
+.top-header .context-label {
+  color: var(--brand-navy-muted);
+}
+
+.top-header .context-select {
+  color: #c7d2fe;
+}
+
+/* Lista desplegable nativa: fondo claro y texto oscuro para que siempre se lea */
+.top-header .context-select option {
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.top-header .select-wrap::after {
+  color: #a5b4fc;
+}
+
+.top-header .btn-icon {
+  background: var(--brand-navy-soft);
+  border-color: var(--brand-navy-line);
+}
+
+.top-header .btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(165, 180, 252, 0.7);
+}
+
+.top-header .mode-switch {
+  background: var(--brand-navy-soft);
+  border-color: var(--brand-navy-line);
+  color: var(--brand-navy-text);
+}
+
+.top-header .mode-switch-track {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.top-header .mode-switch.is-cut {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fecaca;
+}
+
+.top-header .mode-switch.is-cut .mode-switch-track {
+  background: var(--danger);
+}
+
+/* La línea de licencia se recorta con "…" y no influye en el ancho mínimo de la cabecera:
+   así el título solo pasa de línea entre palabras y los botones nunca se salen. */
+.header-row .license-chip {
+  width: 0;
+  min-width: 100%;
 }
