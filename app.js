@@ -2321,8 +2321,17 @@ function renderDevLicenseStatusSummary() {
   `;
 }
 
+// Pantalla de bienvenida con el logo: se muestra un instante y desaparece
+function hideSplashScreen() {
+  const splash = document.getElementById('app-splash');
+  if (!splash) return;
+  splash.classList.add('is-hidden');
+  setTimeout(() => splash.remove(), 400);
+}
+
 // Inicialización de Eventos
 document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(hideSplashScreen, 700);
   handleUrlAutomationParams();
   if (state.familySyncCode) {
     connectFamilyCloudSync();
@@ -3195,7 +3204,7 @@ function setPrivacyStatus(text) {
 
 function exportUserData() {
   const backup = {
-    app: 'ControlParen',
+    app: 'Chronos Parent',
     tipo: 'copia-de-seguridad',
     version: 3,
     exportadoEl: new Date().toISOString(),
@@ -3205,7 +3214,7 @@ function exportUserData() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `controlparen-copia-${getLocalDateKey()}.json`;
+  a.download = `chronos-parent-copia-${getLocalDateKey()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -3217,9 +3226,10 @@ async function importUserData(file) {
   try {
     const text = await file.text();
     const parsed = JSON.parse(text);
-    const incoming = parsed && parsed.app === 'ControlParen' ? parsed.state : null;
+    // Se aceptan también las copias hechas cuando la app se llamaba ControlParen
+    const incoming = parsed && ['Chronos Parent', 'ControlParen'].includes(parsed.app) ? parsed.state : null;
     if (!incoming || typeof incoming !== 'object' || !Array.isArray(incoming.apps)) {
-      throw new Error('El archivo no es una copia de ControlParen');
+      throw new Error('El archivo no es una copia de Chronos Parent');
     }
     if (!confirm('¿Sustituir todos los datos de este dispositivo por los de la copia?')) return;
     const keepUnlocked = state.isParentUnlocked;
@@ -3245,7 +3255,7 @@ async function importUserData(file) {
 }
 
 function wipeUserData() {
-  if (!confirm('¿Borrar TODOS los datos de ControlParen de este dispositivo? No se puede deshacer (nadie más tiene una copia).')) return;
+  if (!confirm('¿Borrar TODOS los datos de Chronos Parent de este dispositivo? No se puede deshacer (nadie más tiene una copia).')) return;
   if (!confirm('Última confirmación: se borrarán perfiles, tiempos, configuración y licencia de este dispositivo.')) return;
   if (syncEventSource) { syncEventSource.close(); syncEventSource = null; }
   try {

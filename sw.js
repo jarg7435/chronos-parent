@@ -1,8 +1,8 @@
-// ControlParen — Service worker
+// Chronos Parent — Service worker
 // Guarda una copia de la app en el propio dispositivo para que funcione sin conexión
 // y no dependa de la web donde se publicó. No recoge, no envía y no guarda ningún
 // dato del usuario: solo los archivos de la aplicación (HTML, CSS, JS y guías).
-const CACHE_NAME = 'controlparen-app-v3';
+const CACHE_NAME = 'chronosparent-app-v4';
 const APP_FILES = [
   './',
   './index.html',
@@ -11,7 +11,13 @@ const APP_FILES = [
   './manifest.json',
   './GUIA-IPHONE-IPAD-PASO-A-PASO.html',
   './GUIA-ANDROID-MOVILES-Y-TABLETS.html',
-  './GUIA-INSTALACION-PADRES.html'
+  './GUIA-INSTALACION-PADRES.html',
+  './icons/favicon.ico',
+  './icons/favicon-32.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/apple-touch-icon.png',
+  './icons/logo-chronos-parent.png'
 ];
 
 self.addEventListener('install', event => {
@@ -25,7 +31,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k.startsWith('controlparen-') && k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => (k.startsWith('controlparen-') || k.startsWith('chronosparent-')) && k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });

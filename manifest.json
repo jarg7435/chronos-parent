@@ -1,11 +1,38 @@
 {
-  "name": "ControlParen — Control parental 100% local",
-  "short_name": "ControlParen",
-  "description": "Control parental de tiempo de uso para iPhone, iPad, Android y PC. Todos los datos se quedan en tus dispositivos: sin cuentas ni servidores.",
+  "name": "Chronos Parent",
+  "short_name": "Chronos Parent",
+  "description": "Chronos Parent: control parental de tiempo de uso para iPhone, iPad, Android y PC. Todos los datos se quedan en tus dispositivos: sin cuentas ni servidores.",
+  "lang": "es",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#4f46e5",
   "orientation": "portrait-primary",
-  "scope": "./"
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

@@ -1,12 +1,12 @@
-# 🛡️ Manual Oficial de Instrucciones — Control Parental Multi-Dispositivo
+# ⏱️ Manual Oficial de Instrucciones — Chronos Parent (Control Parental Multi-Dispositivo)
 
-Bienvenido/a a **Control Parental**, la aplicación diseñada para familias con **hijos e hijas de cualquier edad** que permite medir el tiempo de uso en aplicaciones y juegos en **todos los iPhones, iPads, Tablets y ordenadores de la casa** (por ejemplo, 3 iPhones y 6 iPads), asignar márgenes de tiempo y **cortar el uso de cualquier aplicación en el momento en que los padres lo deseen**.
+Bienvenido/a a **Chronos Parent**, la aplicación diseñada para familias con **hijos e hijas de cualquier edad** que permite medir el tiempo de uso en aplicaciones y juegos en **todos los iPhones, iPads, Tablets y ordenadores de la casa** (por ejemplo, 3 iPhones y 6 iPads), asignar márgenes de tiempo y **cortar el uso de cualquier aplicación en el momento en que los padres lo deseen**.
 
 ---
 
 ## 🔒 Tus datos son solo tuyos: app 100% local y sin servidores
 
-ControlParen funciona entera en tus propios dispositivos. Al comprarla recibes la aplicación y tu clave de licencia; a partir de ahí **la app es tuya y la gestionas tú**.
+Chronos Parent funciona entera en tus propios dispositivos. Al comprarla recibes la aplicación y tu clave de licencia; a partir de ahí **la app es tuya y la gestionas tú**.
 
 - **Todo se guarda solo en el dispositivo** (almacenamiento interno del navegador): perfiles de tus hijos/as, tiempos, márgenes, PIN y configuración.
 - **Sin cuentas, sin servidores ni bases de datos del programador, sin publicidad ni analíticas.** El programador no recibe, no guarda y no puede ver ningún dato tuyo.
@@ -29,7 +29,7 @@ ControlParen funciona entera en tus propios dispositivos. Al comprarla recibes l
 1. **Instalar en la pantalla de inicio de cada iPhone y de cada iPad:**
    - Abre el enlace de la aplicación en **Safari** en el iPhone del padre, el iPhone de la madre/pareja, el iPhone del hijo/a y en todos los iPads de la casa (por ejemplo, en los 6 iPads).
    - Pulsa el botón **Compartir (`⬆️`)** en Safari y selecciona **"Añadir a pantalla de inicio"**.
-   - Se creará el icono **🛡️ ControlParen** en cada dispositivo.
+   - Se creará el icono **⏱️ Chronos Parent** (el cronómetro con la familia) en cada dispositivo.
 2. **(Opcional) Conectar todos los dispositivos entre sí:**
    - En **"☰ Menú" → "🔗 Sincronizar familia"**, pulsa **"🎲 Generar código seguro"** en el primer dispositivo, escribe ese mismo código en todos vuestros iPhones, iPads y móviles, y pulsa **"🔗 Conectar este dispositivo"**. Todo viaja cifrado de extremo a extremo.
 3. **Seleccionar o añadir dispositivos (`📲 Dispositivos`):**
