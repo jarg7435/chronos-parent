@@ -41,9 +41,16 @@
 
   <!-- PANTALLA DE BLOQUEO DE LICENCIA PERSONAL E INTRANSFERIBLE (Solo si no está activada) -->
   <div id="license-gate-overlay" class="modal-backdrop hidden" style="z-index: 500; background: rgba(15, 23, 42, 0.96);">
-    <div class="modal-card" style="max-width: 500px; border: 2px solid #4f46e5;">
+    <div class="modal-card gate-card">
+      <!-- Cabecera oscura de marca: el cronómetro luce sobre fondo oscuro y el nombre va como texto claro -->
+      <div class="gate-hero" role="img" aria-label="Chronos Parent">
+        <img class="gate-hero-watch" src="icons/icon-512.png" alt="" width="512" height="512" />
+        <div class="gate-wordmark" aria-hidden="true">
+          <span class="wm-chronos">CHRONOS</span>
+          <span class="wm-parent">PARENT</span>
+        </div>
+      </div>
       <div style="text-align: center; margin-bottom: 1rem;">
-        <img class="gate-logo" src="icons/logo-chronos-parent.png" alt="Chronos Parent" width="441" height="450" />
         <h3 style="font-size: 1.3rem; color: #1e1b4b;">Licencia Personal e Intransferible</h3>
         <p class="subtitle" style="margin-top: 0.3rem;">
           Esta aplicación es de uso exclusivo para el titular autorizado. Cada clave va firmada digitalmente por el programador y queda vinculada al titular y al cupo de dispositivos e hijos/as contratado.

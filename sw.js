@@ -2,7 +2,7 @@
 // Guarda una copia de la app en el propio dispositivo para que funcione sin conexión
 // y no dependa de la web donde se publicó. No recoge, no envía y no guarda ningún
 // dato del usuario: solo los archivos de la aplicación (HTML, CSS, JS y guías).
-const CACHE_NAME = 'chronosparent-app-v4';
+const CACHE_NAME = 'chronosparent-app-v5';
 const APP_FILES = [
   './',
   './index.html',

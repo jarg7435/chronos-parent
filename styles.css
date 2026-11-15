@@ -1939,11 +1939,112 @@ input[type="url"] {
   flex-shrink: 0;
 }
 
-.gate-logo {
-  display: block;
-  width: 150px;
-  height: auto;
-  margin: 0 auto 0.4rem;
+/* ----- Tarjeta de activación con cabecera oscura de marca ----- */
+.gate-card {
+  --gate-pad-x: 1.5rem;
+  --gate-pad-top: 1.5rem;
+  max-width: 500px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
+}
+
+.gate-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  margin: calc(-1 * var(--gate-pad-top)) calc(-1 * var(--gate-pad-x)) 1.15rem;
+  padding: 1.6rem 1rem 1.35rem;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  /* Fondo azul noche con halos suaves azul y naranja (colores del logo) */
+  background:
+    radial-gradient(120% 85% at 50% 18%, rgba(59, 130, 246, 0.28) 0%, rgba(59, 130, 246, 0) 60%),
+    radial-gradient(70% 60% at 85% 100%, rgba(249, 115, 22, 0.16) 0%, rgba(249, 115, 22, 0) 70%),
+    linear-gradient(180deg, #111827 0%, #0b1220 100%);
+}
+
+/* Brillo diagonal muy sutil que se difumina hacia los bordes */
+.gate-hero::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20%;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.07) 50%, transparent 62%);
+  -webkit-mask-image: radial-gradient(70% 60% at 50% 45%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(70% 60% at 50% 45%, #000 30%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Línea de luz inferior que separa con suavidad la cabecera del contenido blanco */
+.gate-hero::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.55), rgba(251, 146, 60, 0.55), transparent);
+}
+
+.gate-hero-watch {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(96, 165, 250, 0.18));
+}
+
+.gate-wordmark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  user-select: none;
+}
+
+.wm-chronos {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin-right: -0.12em; /* compensa el espaciado final para centrar */
+  background: linear-gradient(180deg, #f1f5f9 0%, #bfdbfe 55%, #7fa6d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 10px rgba(59, 130, 246, 0.3));
+}
+
+.wm-parent {
+  margin-top: 0.3rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  margin-right: -0.32em;
+  background: linear-gradient(180deg, #fed7aa 0%, #fb923c 55%, #ea580c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (max-width: 640px) {
+  .gate-card {
+    --gate-pad-x: 1rem;
+    --gate-pad-top: 1.15rem;
+  }
+  .gate-hero {
+    border-radius: 18px 18px 0 0;
+    padding: 1.3rem 1rem 1.1rem;
+  }
+  .gate-hero-watch {
+    width: 92px;
+    height: 92px;
+  }
+  .wm-chronos { font-size: 1.7rem; }
+  .wm-parent { font-size: 1rem; }
 }
 
 /* Pantalla de bienvenida: fondo blanco como el logo; si el JavaScript fallase, se oculta sola */
