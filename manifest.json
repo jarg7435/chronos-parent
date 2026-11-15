@@ -1,10 +1,11 @@
 {
-  "name": "Control Parental — iPhone & iPad",
+  "name": "ControlParen — Control parental 100% local",
   "short_name": "ControlParen",
-  "description": "Medición de tiempo de uso de aplicaciones en iPhone y iPad para padres",
+  "description": "Control parental de tiempo de uso para iPhone, iPad, Android y PC. Todos los datos se quedan en tus dispositivos: sin cuentas ni servidores.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#4f46e5",
-  "orientation": "portrait-primary"
+  "orientation": "portrait-primary",
+  "scope": "./"
 }

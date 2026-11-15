@@ -451,6 +451,7 @@ const DEFAULT_STATE = {
     registeredDeviceIds: [CURRENT_DEVICE_FP]
   },
   familySyncCode: '',
+  syncRelayUrl: '', // vacío = servidor público por defecto (ntfy.sh)
   lastUpdatedAt: Date.now(),
   lastResetDate: getLocalDateKey(),
   globalDailyLimitSeconds: 180 * 60,
@@ -734,6 +735,7 @@ function normalizeState(parsed, { stopRunningOnNewDay = true } = {}) {
   parsed.categoryLimitsSeconds = cats;
   if (!/^\d{4}$/.test(String(parsed.parentPin || ''))) parsed.parentPin = DEFAULT_STATE.parentPin;
   parsed.silentMode = parsed.silentMode !== false;
+  parsed.syncRelayUrl = normalizeRelayUrl(parsed.syncRelayUrl) || '';
   parsed.lastUpdatedAt = Number(parsed.lastUpdatedAt) || 0;
 
   if (!parsed.license || typeof parsed.license !== 'object') {
@@ -775,7 +777,7 @@ function loadState() {
   }
 }
 
-// Almacenamiento 100% en el dispositivo del usuario (0 bytes ocupados en ningún servidor del programador)
+// Almacenamiento 100% en el dispositivo del usuario: no existe ningún servidor ni base de datos del programador
 // - Acciones del padre/madre: guardan, marcan lastUpdatedAt y envían el estado completo.
 // - Ticks del cronómetro (fromTick): guardan en local sin tocar lastUpdatedAt, para que un
 //   "Cortar Ahora" enviado desde otro móvil nunca quede descartado por "ser más antiguo".
@@ -795,14 +797,33 @@ function saveState(skipCloudPush = false, { fromTick = false } = {}) {
 //     · el canal (topic) = SHA-256 del código  -> no revela el código
 //     · la clave AES-256 = PBKDF2-SHA256 (210.000 iteraciones) del código
 // - Cada mensaje viaja cifrado con AES-256-GCM (confidencial y a prueba de
-//   manipulaciones): el servidor de retransmisión (ntfy.sh) solo ve datos
+//   manipulaciones): el servidor de retransmisión (por defecto ntfy.sh, o el
+//   servidor ntfy propio que elija la familia) solo ve datos
 //   aleatorios. Sin el código nadie puede leer ni inyectar órdenes.
 // - Se rechazan mensajes de otro día, propios, antiguos o mal firmados.
 // - Si el navegador no ofrece criptografía segura (WebCrypto), la
 //   sincronización se desactiva: jamás se envía nada en claro.
 // =====================================================================
 
-const SYNC_RELAY_URL = 'https://ntfy.sh';
+// Servidor de retransmisión efímero compatible con ntfy. NO es un servidor del programador:
+// por defecto el servicio público ntfy.sh, y la familia puede indicar el suyo propio.
+const DEFAULT_SYNC_RELAY_URL = 'https://ntfy.sh';
+
+function normalizeRelayUrl(url) {
+  const clean = String(url || '').trim();
+  if (!clean) return '';
+  try {
+    const u = new URL(clean);
+    if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) return null;
+    return u.origin + u.pathname.replace(/\/+$/, '');
+  } catch (e) {
+    return null;
+  }
+}
+
+function getSyncRelayUrl() {
+  return normalizeRelayUrl(state.syncRelayUrl) || DEFAULT_SYNC_RELAY_URL;
+}
 const SYNC_PBKDF2_ITERATIONS = 210000;
 const SYNC_PROTOCOL_VERSION = 3;
 const SYNC_MIN_CODE_LENGTH = 12;
@@ -927,7 +948,7 @@ async function decryptSyncPayload(envelopeText, cryptoCtx) {
 
 // Estado que se comparte: se excluyen los datos propios de cada dispositivo
 function buildSyncPayload() {
-  const { isParentUnlocked, activeDevice, familySyncCode, ...shared } = state;
+  const { isParentUnlocked, activeDevice, familySyncCode, syncRelayUrl, ...shared } = state;
   return shared;
 }
 
@@ -973,7 +994,7 @@ async function sendSyncMessage(message) {
     const ctx = await getSyncCrypto();
     if (ctx.code !== normalizeSyncCode(state.familySyncCode)) return; // el código cambió mientras tanto
     const body = await encryptSyncPayload(message, ctx);
-    await fetch(`${SYNC_RELAY_URL}/${ctx.topic}`, { method: 'POST', body });
+    await fetch(`${getSyncRelayUrl()}/${ctx.topic}`, { method: 'POST', body });
   } catch (e) {
     // Sin red o error puntual: se reenviará en la próxima acción
   }
@@ -1015,7 +1036,7 @@ async function connectFamilyCloudSync() {
   try {
     const ctx = await getSyncCrypto();
     if (myId !== syncConnectionId) return; // se pidió otra conexión mientras derivábamos la clave
-    syncEventSource = new EventSource(`${SYNC_RELAY_URL}/${ctx.topic}/sse?since=12h`);
+    syncEventSource = new EventSource(`${getSyncRelayUrl()}/${ctx.topic}/sse?since=12h`);
     syncEventSource.onmessage = (event) => { handleSyncEvent(event, ctx); };
   } catch (e) {
     console.warn('Error conectando sincronización familiar:', e);
@@ -1029,7 +1050,7 @@ async function handleSyncEvent(event, ctx) {
     if (!outer || outer.event !== 'message') return;
     let envelope = outer.message;
     // Los mensajes grandes el servidor los entrega como archivo adjunto
-    if (outer.attachment && outer.attachment.url && /^https:\/\/ntfy\.sh\//.test(outer.attachment.url)) {
+    if (outer.attachment && outer.attachment.url && String(outer.attachment.url).startsWith(getSyncRelayUrl() + '/')) {
       const res = await fetch(outer.attachment.url);
       if (!res.ok) return;
       envelope = await res.text();
@@ -1084,6 +1105,7 @@ function applySyncMessage(msg) {
   const next = normalizeState(deepClone(msg.payload), { stopRunningOnNewDay: true });
   next.license = incomingLic;
   next.familySyncCode = previous.familySyncCode; // el código es local: nunca se acepta uno recibido
+  next.syncRelayUrl = previous.syncRelayUrl;     // el servidor lo elige cada dispositivo
   next.isParentUnlocked = previous.isParentUnlocked;
   next.activeDevice = next.familyDevices.some(d => d.name === previous.activeDevice)
     ? previous.activeDevice
@@ -3104,6 +3126,40 @@ document.addEventListener('DOMContentLoaded', () => {
   // Menús desplegables de la cabecera
   initDropdowns();
 
+  // Privacidad y datos
+  document.getElementById('btn-privacy')?.addEventListener('click', () => {
+    setPrivacyStatus('');
+    document.getElementById('modal-privacy').classList.remove('hidden');
+  });
+  document.getElementById('btn-export-data')?.addEventListener('click', () => requireParentAccess(exportUserData));
+  document.getElementById('input-import-data')?.addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (file) requireParentAccess(() => importUserData(file));
+  });
+  document.getElementById('btn-wipe-data')?.addEventListener('click', () => requireParentAccess(wipeUserData));
+
+  // Servidor de retransmisión elegido por la familia
+  const relayInput = document.getElementById('sync-relay-input');
+  document.getElementById('btn-family-sync')?.addEventListener('click', () => {
+    if (relayInput) relayInput.value = state.syncRelayUrl || '';
+  });
+  document.getElementById('btn-save-relay')?.addEventListener('click', () => {
+    requireParentAccess(() => {
+      const raw = relayInput ? relayInput.value : '';
+      const norm = normalizeRelayUrl(raw);
+      if (norm === null) {
+        setSyncStatus('⛔ Dirección no válida: debe empezar por https:// (sin usuario ni contraseña).');
+        return;
+      }
+      state.syncRelayUrl = norm;
+      if (relayInput) relayInput.value = norm;
+      saveState(true);
+      if (state.familySyncCode) connectFamilyCloudSync();
+      setSyncStatus(norm ? `✅ Servidor guardado: ${norm}. Usad el mismo en todos los dispositivos.` : '✅ Se usará el servidor público por defecto (ntfy.sh).');
+    });
+  });
+
   // Recordar qué tarjetas tienen "Más opciones" desplegado (el evento toggle no burbujea: usamos captura)
   document.getElementById('apps-grid')?.addEventListener('toggle', e => {
     const det = e.target;
@@ -3130,6 +3186,88 @@ document.addEventListener('DOMContentLoaded', () => {
     if (openModals.length) openModals[openModals.length - 1].classList.add('hidden');
   });
 });
+
+// ===== Privacidad y datos del usuario (todo es suyo y vive en su dispositivo) =====
+function setPrivacyStatus(text) {
+  const el = document.getElementById('privacy-status');
+  if (el) el.textContent = text;
+}
+
+function exportUserData() {
+  const backup = {
+    app: 'ControlParen',
+    tipo: 'copia-de-seguridad',
+    version: 3,
+    exportadoEl: new Date().toISOString(),
+    state: { ...state, isParentUnlocked: false }
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `controlparen-copia-${getLocalDateKey()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setPrivacyStatus('💾 Copia descargada. Guárdala en un lugar seguro: contiene el PIN parental y la licencia.');
+}
+
+async function importUserData(file) {
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    const incoming = parsed && parsed.app === 'ControlParen' ? parsed.state : null;
+    if (!incoming || typeof incoming !== 'object' || !Array.isArray(incoming.apps)) {
+      throw new Error('El archivo no es una copia de ControlParen');
+    }
+    if (!confirm('¿Sustituir todos los datos de este dispositivo por los de la copia?')) return;
+    const keepUnlocked = state.isParentUnlocked;
+    const next = normalizeState(deepClone(incoming), { stopRunningOnNewDay: true });
+    next.isParentUnlocked = keepUnlocked;
+    // La licencia de la copia se vuelve a verificar (normalizeState) y este aparato se registra en ella
+    if (next.license && next.license.isActivated) {
+      const reg = Array.isArray(next.license.registeredDeviceIds) ? next.license.registeredDeviceIds : [];
+      if (!reg.includes(CURRENT_DEVICE_FP)) {
+        if (reg.length >= (next.license.maxDevices || 1)) next.license.isActivated = false;
+        else reg.push(CURRENT_DEVICE_FP);
+      }
+      next.license.registeredDeviceIds = reg;
+    }
+    state = next;
+    saveState(true);
+    if (state.familySyncCode) connectFamilyCloudSync();
+    renderAll();
+    setPrivacyStatus('✅ Copia restaurada correctamente.');
+  } catch (e) {
+    setPrivacyStatus('⛔ No se pudo restaurar: ' + e.message);
+  }
+}
+
+function wipeUserData() {
+  if (!confirm('¿Borrar TODOS los datos de ControlParen de este dispositivo? No se puede deshacer (nadie más tiene una copia).')) return;
+  if (!confirm('Última confirmación: se borrarán perfiles, tiempos, configuración y licencia de este dispositivo.')) return;
+  if (syncEventSource) { syncEventSource.close(); syncEventSource = null; }
+  try {
+    [STORAGE_KEY, STORAGE_KEY + '_corrupt_backup', UI_PREFS_KEY + ':summaryOpen'].forEach(k => window.localStorage.removeItem(k));
+  } catch (e) { /* almacenamiento no disponible */ }
+  state = deepClone(DEFAULT_STATE);
+  safeStorageSet(STORAGE_KEY, JSON.stringify(state));
+  document.getElementById('modal-privacy')?.classList.add('hidden');
+  renderAll();
+}
+
+// Service worker: guarda la app en el dispositivo para que funcione sin conexión y
+// no dependa de la web donde se publicó una vez instalada.
+function registerOfflineSupport() {
+  if (!('serviceWorker' in navigator)) return;
+  const isLocalhost = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (location.protocol !== 'https:' && !isLocalhost) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker no registrado:', err));
+  });
+}
+registerOfflineSupport();
 
 // ===== Menús desplegables (accesibles con teclado y táctiles) =====
 function closeAllDropdowns() {

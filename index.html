@@ -9,9 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="ControlParen" />
   <link rel="manifest" href="manifest.json" />
   <title>Control Parental — Gestión de Tiempo y Corte en Vivo Multi-Dispositivo</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Sin fuentes ni recursos externos: la app no contacta con terceros al abrirse -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -115,6 +113,10 @@
               <button type="button" id="btn-family-sync" class="dropdown-item" role="menuitem">
                 <span class="di-icon">🔗</span>
                 <span><strong>Sincronizar familia</strong><small><span id="sync-code-badge">Solo este dispositivo</span></small></span>
+              </button>
+              <button type="button" id="btn-privacy" class="dropdown-item" role="menuitem">
+                <span class="di-icon">🔒</span>
+                <span><strong>Privacidad y mis datos</strong><small>Copia de seguridad, importar o borrar</small></span>
               </button>
               <div class="dropdown-divider"></div>
               <div class="dropdown-label">Guías</div>
@@ -587,6 +589,16 @@
             <button type="button" id="btn-disconnect-sync" class="btn btn-ghost">⏏️ Desconectar</button>
           </div>
           <small class="help-text" id="sync-status-msg">Los dispositivos con el mismo código comparten los tiempos y reciben los cortes al instante. Nadie sin el código puede leer ni enviar datos (tampoco el programador).</small>
+
+          <details class="sync-advanced">
+            <summary>⚙️ Servidor de retransmisión (opcional, avanzado)</summary>
+            <p class="help-text">La sincronización es <strong>opcional y la gestionáis vosotros</strong>. Los mensajes, siempre cifrados, pasan por un servidor de retransmisión efímero compatible con <em>ntfy</em> (por defecto el servicio público y gratuito <code>https://ntfy.sh</code>, que borra los mensajes en unas horas). Si lo preferís, podéis usar vuestro propio servidor ntfy. Ningún dato pasa por servidores del programador.</p>
+            <div class="form-row" style="align-items:center; flex-wrap:wrap;">
+              <input type="url" id="sync-relay-input" class="flex-1" placeholder="https://ntfy.sh" autocomplete="off" spellcheck="false" style="min-width:200px;" />
+              <button type="button" id="btn-save-relay" class="btn btn-secondary">Guardar servidor</button>
+            </div>
+            <small class="help-text">Debe empezar por <code>https://</code>. Todos los dispositivos de la familia deben usar el mismo servidor.</small>
+          </details>
         </div>
 
         <hr class="divider" />
@@ -613,6 +625,50 @@
 
       <div class="modal-actions">
         <button type="button" class="btn btn-primary" data-close="modal-family-sync">Listo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Privacidad y datos (los datos son 100% del usuario y viven en su dispositivo) -->
+  <div id="modal-privacy" class="modal-backdrop hidden">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3>🔒 Privacidad y mis datos</h3>
+          <p class="subtitle">Esta app es completamente tuya y funciona en tus dispositivos.</p>
+        </div>
+        <button class="modal-close" data-close="modal-privacy">✕</button>
+      </div>
+
+      <ul class="privacy-list">
+        <li>📱 <strong>Todo se guarda solo en este dispositivo</strong> (almacenamiento interno del navegador): perfiles de hijos/as, tiempos, márgenes y configuración.</li>
+        <li>🚫 <strong>Sin cuentas, sin servidores del programador, sin publicidad ni analíticas.</strong> El programador no recibe, no almacena y no puede ver ningún dato tuyo.</li>
+        <li>🔗 <strong>Sincronización opcional y bajo tu control:</strong> solo si la activas, y siempre cifrada con el código secreto de tu familia a través de un canal de retransmisión efímero que tú eliges.</li>
+        <li>✈️ <strong>Funciona sin conexión</strong> una vez instalada en la pantalla de inicio.</li>
+        <li>🧹 <strong>Tú decides:</strong> puedes guardar una copia, pasarla a otro dispositivo o borrarlo todo cuando quieras. Si borras los datos del navegador sin copia, no se pueden recuperar (nadie más los tiene).</li>
+      </ul>
+
+      <div class="privacy-actions">
+        <div class="privacy-action">
+          <strong>💾 Guardar copia de seguridad</strong>
+          <small>Descarga un archivo con todos tus datos para guardarlo donde quieras.</small>
+          <button type="button" id="btn-export-data" class="btn btn-primary">Descargar copia</button>
+        </div>
+        <div class="privacy-action">
+          <strong>📥 Restaurar una copia</strong>
+          <small>Carga un archivo de copia guardado antes (sustituye los datos de este dispositivo).</small>
+          <label class="btn btn-secondary file-btn">Elegir archivo…<input type="file" id="input-import-data" accept=".json,application/json" hidden /></label>
+        </div>
+        <div class="privacy-action danger">
+          <strong>🗑️ Borrar todos los datos de este dispositivo</strong>
+          <small>Elimina perfiles, tiempos, configuración y licencia de este dispositivo.</small>
+          <button type="button" id="btn-wipe-data" class="btn btn-danger">Borrar todo</button>
+        </div>
+      </div>
+      <p id="privacy-status" class="help-text" style="margin-top:0.75rem;"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" data-close="modal-privacy">Listo</button>
       </div>
     </div>
   </div>

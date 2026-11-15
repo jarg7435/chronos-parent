@@ -29,7 +29,8 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Fuentes del propio sistema: sin descargas externas */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-page);
   color: var(--text-main);
   line-height: 1.5;
@@ -1850,4 +1851,81 @@ select {
 
 @media (max-width: 640px) {
   .license-key-textarea { font-size: 16px; }
+}
+
+
+/* Privacidad y datos */
+.privacy-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.privacy-list strong { color: var(--text-main); }
+
+.privacy-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
+  gap: 0.75rem;
+}
+
+.privacy-action {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+
+.privacy-action small {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.privacy-action.danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.privacy-action .btn { min-height: var(--tap); }
+
+.file-btn { cursor: pointer; }
+
+.sync-advanced {
+  margin-top: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-subtle);
+}
+
+.sync-advanced summary {
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.sync-advanced[open] summary { margin-bottom: 0.4rem; }
+
+input[type="url"] {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  input[type="url"] { font-size: 16px; }
 }
